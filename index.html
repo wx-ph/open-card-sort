@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu open card sort</title>
+<style>
+  @font-face { font-family:"Neue Frutiger World"; src:local("Neue Frutiger World Regular"),local("NeueFrutigerWorld-Regular"); font-weight:400; font-style:normal; font-display:swap; }
+  @font-face { font-family:"Neue Frutiger World"; src:local("Neue Frutiger World Medium"),local("NeueFrutigerWorld-Medium"); font-weight:500 600; font-style:normal; font-display:swap; }
+  @font-face { font-family:"Neue Frutiger World"; src:local("Neue Frutiger World Bold"),local("NeueFrutigerWorld-Bold"); font-weight:700; font-style:normal; font-display:swap; }
+  :root { --bg:#f7f8fa; --ink:#15191d; --muted:#606970; --line:#e6eaee; --card:#fff; --accent:#2166e8; --accent-hover:#1555c8; --page-gap:24px; font-family:"Neue Frutiger World",Arial,sans-serif; color:var(--ink); background:#e7ecef; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  ::selection { background:#d9e7ff; color:var(--ink); }
+  body { margin:0; padding:var(--page-gap); font:400 15px/1.45 "Neue Frutiger World",Arial,sans-serif; caret-color:var(--accent); }
+  button, input, textarea { font:inherit; }
+  button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:9px 14px; border:1px solid var(--line); border-radius:8px; background:#f8fafb; color:var(--ink); font-size:14px; line-height:20px; cursor:pointer; transition:background .15s,border-color .15s; }
+  button:hover { background:#eef2f5; border-color:#d4dce3; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover { background:var(--accent-hover); border-color:var(--accent-hover); }
+  button:disabled { opacity:.5; cursor:default; }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  svg { width:16px; height:16px; flex-shrink:0; }
+  .app-shell { max-width:1600px; min-height:calc(100dvh - var(--page-gap) * 2); margin:0 auto; border:1px solid #dfe5e9; border-radius:12px; background:#fff; }
+  header { position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; padding:22px 28px; border-bottom:1px solid var(--line); border-radius:12px 12px 0 0; background:#fff; }
+  .page-heading { flex:1 1 240px; min-width:0; }
+  h1 { margin:0 0 3px; font-size:23px; line-height:1.2; font-weight:500; letter-spacing:-.02em; }
+  .count { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+  .header-actions { display:flex; flex-wrap:wrap; gap:10px; }
+  main { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:24px; padding:24px; }
+  .panel { min-width:0; padding:20px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+  .pool { position:sticky; top:calc(var(--header-height, 98px) + 16px); max-height:calc(100dvh - var(--header-height, 98px) - 40px); overflow:auto; scrollbar-color:#c9d1d8 transparent; scrollbar-width:thin; }
+  h2 { margin:0; font-size:17px; line-height:24px; font-weight:500; letter-spacing:-.01em; }
+  .cards-heading, .section-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; min-height:40px; gap:10px; margin:0 0 12px; }
+  .card-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .cards-heading button { padding:8px 12px; font-size:14px; }
+  .edit-status, .section-description { min-height:38px; margin:0 0 18px; color:var(--muted); font-size:13px; line-height:19px; }
+  .zone { display:flex; flex-direction:column; gap:10px; min-height:120px; padding:2px; border-radius:10px; transition:background .15s; }
+  .zone.over { background:#edf3ff; outline:2px dashed var(--accent); outline-offset:2px; }
+  #pool { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; align-content:start; }
+  #pool .empty { grid-column:1 / -1; }
+  .groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:16px; }
+  .group { display:flex; flex-direction:column; min-width:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg); }
+  .group-head { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+  .group-head input { flex:1; min-width:0; width:100%; padding:7px 8px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--ink); font-size:15px; font-weight:500; }
+  .group-head input::placeholder { color:var(--muted); opacity:1; font-weight:400; }
+  .group-head input:hover, .group-head input:focus { border-color:#d6e0ea; background:#fff; }
+  .group-head .n { display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:24px; height:24px; border:1px solid #e0e5e9; border-radius:6px; background:#fff; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .group-head button { flex-shrink:0; width:30px; min-height:30px; padding:6px; border:0; background:transparent; color:var(--muted); }
+  .group-head button:hover { background:#fdeeee; color:#a4352b; }
+  .group .zone { flex:1; min-height:140px; }
+  .card { position:relative; min-width:0; min-height:132px; padding:14px; border:1px solid #e2e7ec; border-radius:12px; background:var(--card); box-shadow:0 3px 12px rgba(21,25,29,.07); cursor:grab; user-select:none; }
+  .card:hover { border-color:#bbc9d8; }
+  .card:active { cursor:grabbing; }
+  .card.dragging { opacity:.4; }
+  .card .top { display:flex; align-items:center; min-height:20px; margin-bottom:8px; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+  .card.editing .top { padding-right:28px; }
+  .card .title { margin:0 0 6px; font-size:15px; line-height:20px; font-weight:500; }
+  .card .desc { color:var(--muted); font-size:13px; line-height:18px; }
+  .card .title, .card .desc { overflow-wrap:anywhere; white-space:pre-wrap; }
+  .card [contenteditable] { min-height:1.35em; border-radius:3px; cursor:text; user-select:text; }
+  .card [contenteditable]:hover { background:#f0f5ff; }
+  .card [contenteditable]:focus { outline:2px solid var(--accent); outline-offset:3px; }
+  .card [contenteditable]:empty::before { content:attr(data-placeholder); color:var(--muted); }
+  .card .remove-card { position:absolute; top:9px; right:8px; width:30px; height:30px; min-height:30px; padding:6px; border:0; border-radius:7px; background:transparent; color:var(--muted); opacity:0; pointer-events:none; }
+  .card:hover .remove-card, .card:focus-within .remove-card { opacity:1; pointer-events:auto; }
+  .card .remove-card:hover { background:#fdeeee; color:#a4352b; }
+  .remove-card svg, .add-card svg { width:18px; height:18px; }
+  .add-group, .add-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:196px; padding:24px 16px; border:1px dashed #cbd4dd; border-radius:12px; background:#fafbfc; color:var(--muted); font-size:14px; }
+  .add-group:hover, .add-card:hover { border-color:var(--accent); background:#f1f6ff; color:var(--accent); }
+  .tile-icon { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border:1px solid #dfe5eb; border-radius:50%; background:#fff; color:var(--ink); }
+  .tile-icon svg { width:18px; height:18px; }
+  .add-card { min-height:132px; }
+  .empty { padding:30px 12px; color:var(--muted); font-size:13px; text-align:center; }
+  @media (max-width:1100px) {
+    :root { --page-gap:16px; }
+    header { padding:20px; }
+    main { gap:16px; padding:20px; }
+    .panel { padding:16px; }
+    #pool { gap:10px; }
+    .card { padding:12px; }
+  }
+  @media (max-width:760px) {
+    :root { --page-gap:12px; }
+    header { padding:18px; }
+    .page-heading { flex-basis:100%; }
+    main { grid-template-columns:minmax(0,1fr); padding:16px; }
+    .pool { position:static; max-height:560px; }
+    .groups { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); }
+  }
+  @media (max-width:540px) {
+    :root { --page-gap:0px; }
+    .app-shell { border:0; border-radius:0; }
+    header { position:static; border-radius:0; }
+    h1 { font-size:22px; }
+    .header-actions { width:100%; gap:8px; }
+    .header-actions button { flex:1; padding-inline:10px; font-size:13px; }
+    main { padding:12px; }
+    .panel { padding:14px; }
+    #pool { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .card { min-height:142px; }
+    .cards-heading { align-items:flex-start; }
+    button { min-height:44px; }
+    .cards-heading button { padding-inline:10px; font-size:13px; }
+  }
+  @media (hover:none) { .card .remove-card { opacity:1; pointer-events:auto; } }
+  @media (prefers-reduced-motion:reduce) { button, .zone { transition:none; } }
+</style>
+</head>
+<body>
+<div class="app-shell">
+<header>
+  <div class="page-heading">
+    <h1>Menu open card sort</h1>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="header-actions">
+    <button id="reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.5 8M3 4v6h6"/></svg>Reset</button>
+    <button id="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></svg>Export CSV</button>
+    <button class="primary" id="addTop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New group</button>
+  </div>
+</header>
+<main>
+  <section class="pool panel">
+    <div class="cards-heading">
+      <h2>Cards</h2>
+      <div class="card-actions">
+        <button id="editCards" type="button">Edit cards</button>
+        <button class="primary" id="saveChanges" type="button" hidden disabled>Save changes</button>
+      </div>
+    </div>
+    <p class="edit-status" id="editStatus" role="status">Drag cards into groups. Click Edit cards to change their text.</p>
+    <div class="zone" id="pool" data-group="pool"></div>
+  </section>
+  <section class="panel">
+    <div class="section-heading"><h2>Groups</h2></div>
+    <p class="section-description">Bring related cards together and give each group a name.</p>
+    <div class="groups" id="groups">
+      <button class="add-group" id="addTile"><span class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Add new group</span></button>
+    </div>
+  </section>
+</main>
+</div>
+
+<script>
+const CARDS = [
+  ["Choose a lullaby or sound","Pick which song or soothing sound plays"],
+  ["Lullaby volume","How loud the lullaby plays"],
+  ["Lullaby timer","Stop the lullaby after a set time"],
+  ["Screen brightness","Make the screen brighter or darker"],
+  ["Battery saving","Screen turns off by itself when not used"],
+  ["Night mode","Darker, warmer screen for night time"],
+  ["Audio-only mode","Listen without the video on screen"],
+  ["Video and audio mode","Normal: see and hear the baby"],
+  ["Sound sensitivity","How quiet a sound needs to be before you hear it"],
+  ["Temperature alert range","Get alerted when the room is too hot or cold"],
+  ["Temperature units","Show °C or °F"],
+  ["Add a camera","Connect another camera"],
+  ["Remove a camera","Disconnect a camera"],
+  ["Mute a camera","Stop sound from one camera"],
+  ["SenseIQ sleep tracking","Track sleep state and breathing without touching the baby",1],
+  ["Cry translation","Suggests why the baby is crying",1],
+  ["Cry detection","Notices when the baby cries",1],
+  ["Breathing alert","Alert when breathing is out of the normal range",1],
+  ["Sleep summary","See how last night went"],
+  ["Rename a camera","Give each camera a name, e.g. the baby's name"],
+  ["Night vision","Infrared view in a dark room"],
+  ["Flip / rotate image","Turn the video the right way up"],
+  ["Talk-back volume","How loud your voice sounds in the baby's room"],
+  ["Alert sound and volume","How the parent unit warns you"],
+  ["Out-of-range alert","Warn when the parent unit loses the camera",1],
+  ["Low battery alert","Warn before the parent unit runs out",1],
+  ["Side screen display","What the small screen shows when the main screen is off",1],
+  ["Screen-off timer","How long before the screen turns off",1],
+  ["Customise buttons","Choose what the 4 side buttons do"],
+  ["Button sounds","Beep when you press a button"],
+  ["Language","Change the language",1],
+  ["Date and time","Set the clock",1],
+  ["Connect to the app","Pair with the phone app",1],
+  ["Software update","Check for and install updates",1],
+  ["Factory reset","Erase all settings",1],
+  ["Device info","Model, version, help",1],
+];
+const KEY = "firefly-card-sort";
+let state;
+try { state = JSON.parse(localStorage.getItem(KEY) || "null") || fresh(); }
+catch { state = fresh(); }
+function fresh(){ return { groups:[], placement:{}, next:1 }; }
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+  catch {
+    document.getElementById("editStatus").textContent = "Could not save in this browser. Allow local storage and try Save changes again. You can also export your current text as CSV.";
+    return false;
+  }
+}
+
+// Migrate the original title/description arrays without changing placement IDs.
+// Stable IDs keep cards in their groups when other cards are added or removed.
+let cards = (Array.isArray(state.cards) ? state.cards : CARDS).map((card, i) =>
+  Array.isArray(card)
+    ? { id:String(i), title:card[0], description:card[1], tag:Boolean(CARDS[i]?.[2]) }
+    : { ...card }
+);
+function cardSnapshot(){ return cards.map(card => ({ ...card })); }
+let savedCards = JSON.stringify(cards);
+let isEditing = false;
+function hasUnsavedChanges(){ return JSON.stringify(cards) !== savedCards; }
+function prunePlacements(){
+  const ids = new Set(cards.map(card => card.id));
+  state.placement = Object.fromEntries(Object.entries(state.placement).filter(([id]) => ids.has(id)));
+}
+function updateEditStatus(){
+  const dirty = hasUnsavedChanges();
+  document.getElementById("saveChanges").disabled = !dirty;
+  document.getElementById("saveChanges").hidden = !isEditing;
+  document.getElementById("editCards").textContent = isEditing ? "Cancel" : "Edit cards";
+  document.getElementById("editStatus").textContent = dirty
+    ? "Unsaved card edits — click Save changes to keep them in this browser."
+    : isEditing
+      ? "Edit card text, add a card below, or hover over a card to remove it. Save changes when finished."
+      : "Drag cards into groups. Click Edit cards to change their text.";
+}
+
+const pool = document.getElementById("pool");
+const groupsEl = document.getElementById("groups");
+const addTile = document.getElementById("addTile");
+let dragId = null;
+
+function cardEl(i){
+  const { id, title, description } = cards[i];
+  const el = document.createElement("div");
+  el.className = isEditing ? "card editing" : "card"; el.draggable = true; el.dataset.id = id;
+  el.innerHTML = `<div class="top"><span>${String(i+1).padStart(2,"0")}</span></div>
+    <div class="title"></div><div class="desc"></div>`;
+  el.querySelector(".title").textContent = title;
+  el.querySelector(".desc").textContent = description;
+  if (isEditing) {
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-card";
+    remove.title = "Remove card";
+    remove.setAttribute("aria-label", `Remove card ${i+1}: ${title || "Untitled"}`);
+    remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>';
+    remove.addEventListener("click", () => removeCard(id));
+    el.appendChild(remove);
+  }
+  [".title", ".desc"].forEach((selector, field) => {
+    if (!isEditing) return;
+    const editor = el.querySelector(selector);
+    editor.contentEditable = "plaintext-only";
+    editor.setAttribute("role", "textbox");
+    editor.setAttribute("aria-label", `Card ${i+1} ${field ? "description" : "title"}`);
+    editor.setAttribute("aria-multiline", "true");
+    editor.dataset.placeholder = field ? "Add a description…" : "Add a title…";
+    editor.addEventListener("focus", () => { el.draggable = false; });
+    editor.addEventListener("blur", () => { el.draggable = true; });
+    editor.addEventListener("input", () => {
+      cards[i][field ? "description" : "title"] = editor.innerText.replace(/\r\n/g, "\n");
+      if (!field) el.querySelector(".remove-card").setAttribute("aria-label", `Remove card ${i+1}: ${cards[i].title || "Untitled"}`);
+      updateEditStatus();
+    });
+  });
+  el.addEventListener("dragstart", e => {
+    if (e.target.closest("[contenteditable], button")) { e.preventDefault(); return; }
+    dragId = id; el.classList.add("dragging"); e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed="move";
+  });
+  el.addEventListener("dragend", () => {
+    el.classList.remove("dragging"); dragId = null;
+    document.querySelectorAll(".zone.over").forEach(z => z.classList.remove("over"));
+    render();
+  });
+  return el;
+}
+
+function addCard(){
+  if (!isEditing) return;
+  const id = "card-" + crypto.randomUUID();
+  cards.push({ id, title:"", description:"", tag:false });
+  state.placement[id] = { g:"pool", o:Math.max(cards.length, ...Object.values(state.placement).map(p => Number(p.o) || 0)) + 1 };
+  render();
+  updateEditStatus();
+  const editor = pool.querySelector(`[data-id="${id}"] .title`);
+  editor.focus({ preventScroll:true });
+  editor.scrollIntoView({ block:"nearest" });
+}
+
+function removeCard(id){
+  if (!isEditing) return;
+  const index = cards.findIndex(card => card.id === id);
+  cards = cards.filter(card => card.id !== id);
+  const nextId = cards[index]?.id || cards[index-1]?.id;
+  // Keep the removed card's placement until Save, so Cancel can restore it.
+  render();
+  updateEditStatus();
+  const next = nextId ? document.querySelector(`[data-id="${nextId}"] .remove-card`) : document.getElementById("editCards");
+  next?.focus({ preventScroll:true });
+}
+
+function makeZone(zone, gid){
+  zone.dataset.group = gid;
+  zone.addEventListener("dragover", e => {
+    if (dragId === null) return;
+    e.preventDefault(); zone.classList.add("over");
+    const dragging = document.querySelector(".card.dragging");
+    if (!dragging) return;
+    const after = [...zone.querySelectorAll(".card:not(.dragging)")].find(c => { const r = c.getBoundingClientRect(); return e.clientY < r.top || (e.clientY <= r.bottom && e.clientX < r.left + r.width/2); });
+    zone.querySelector(".empty")?.remove();
+    zone.insertBefore(dragging, after || zone.querySelector(".add-card"));
+  });
+  zone.addEventListener("dragleave", e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove("over"); });
+  zone.addEventListener("drop", e => {
+    if (dragId === null) return;
+    e.preventDefault(); zone.classList.remove("over"); syncFromDOM();
+  });
+}
+makeZone(pool, "pool");
+
+function syncFromDOM(){
+  const activeIds = new Set(cards.map(card => card.id));
+  const savedIds = new Set(JSON.parse(savedCards).map(card => card.id));
+  // Sorting may autosave during editing; retain placements for pending removals.
+  state.placement = Object.fromEntries(Object.entries(state.placement).filter(([id]) => savedIds.has(id) && !activeIds.has(id)));
+  document.querySelectorAll(".zone").forEach(z => {
+    [...z.querySelectorAll(".card")].forEach((c, idx) => state.placement[c.dataset.id] = { g:z.dataset.group, o:idx });
+  });
+  save(); render();
+}
+
+function addGroup(){
+  const id = "g" + state.next++;
+  state.groups.push({ id, name:"" });
+  save(); render();
+  groupsEl.querySelector(`[data-gid="${id}"] input`)?.focus();
+}
+
+function render(){
+  groupsEl.querySelectorAll(".group").forEach(g => g.remove());
+  pool.innerHTML = "";
+  const byGroup = { pool:[] };
+  state.groups.forEach(g => byGroup[g.id] = []);
+  cards.forEach((card, i) => {
+    const p = state.placement[card.id];
+    const g = p && byGroup[p.g] ? p.g : "pool";
+    byGroup[g].push([i, p ? p.o : i]);
+  });
+  for (const k in byGroup) byGroup[k].sort((a,b) => a[1]-b[1]);
+
+  byGroup.pool.forEach(([i]) => pool.appendChild(cardEl(i)));
+  if (!byGroup.pool.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = cards.length ? "All cards sorted." : "No cards yet. Click Edit cards to add some.";
+    if (isEditing && !cards.length) empty.textContent = "No cards yet. Add your first card below.";
+    pool.appendChild(empty);
+  }
+  if (isEditing) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.id = "addCard";
+    add.className = "add-card";
+    add.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add card</span>';
+    add.addEventListener("click", addCard);
+    pool.appendChild(add);
+  }
+
+  state.groups.forEach((g, gi) => {
+    const box = document.createElement("div");
+    box.className = "group"; box.dataset.gid = g.id;
+    box.innerHTML = `<div class="group-head"><input placeholder="Group ${gi+1} – click to name" aria-label="Group name"><span class="n">${byGroup[g.id].length}</span><button title="Delete group" aria-label="Delete group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><div class="zone"></div>`;
+    const input = box.querySelector("input");
+    input.value = g.name;
+    input.addEventListener("input", () => { g.name = input.value; save(); });
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+    box.querySelector("button").addEventListener("click", () => {
+      if (byGroup[g.id].length && !confirm("Delete this group? Its cards go back to the list.")) return;
+      state.groups = state.groups.filter(x => x.id !== g.id);
+      Object.entries(state.placement).forEach(([id, p]) => { if (p.g === g.id) delete state.placement[id]; });
+      save(); render();
+    });
+    const zone = box.querySelector(".zone");
+    makeZone(zone, g.id);
+    byGroup[g.id].forEach(([i]) => zone.appendChild(cardEl(i)));
+    if (!byGroup[g.id].length) zone.innerHTML = '<div class="empty">Drop cards here</div>';
+    groupsEl.insertBefore(box, addTile);
+  });
+
+  document.getElementById("count").textContent = `${cards.length - byGroup.pool.length} / ${cards.length} sorted · ${state.groups.length} groups`;
+}
+
+addTile.addEventListener("click", addGroup);
+document.getElementById("addTop").addEventListener("click", addGroup);
+document.getElementById("editCards").addEventListener("click", () => {
+  if (isEditing) {
+    if (hasUnsavedChanges() && !confirm("Discard your unsaved card edits?")) return;
+    cards = JSON.parse(savedCards);
+    prunePlacements();
+    save();
+  }
+  isEditing = !isEditing;
+  render();
+  updateEditStatus();
+});
+document.getElementById("saveChanges").addEventListener("click", () => {
+  const previous = { cards:state.cards, placement:state.placement };
+  state.cards = cardSnapshot();
+  prunePlacements();
+  if (!save()) { Object.assign(state, previous); return; }
+  savedCards = JSON.stringify(cards);
+  isEditing = false;
+  render();
+  updateEditStatus();
+  document.getElementById("editStatus").textContent = "Changes saved in this browser. Cards are locked; click Edit cards to edit again.";
+});
+window.addEventListener("beforeunload", e => {
+  if (hasUnsavedChanges()) { e.preventDefault(); e.returnValue = ""; }
+});
+document.getElementById("reset").addEventListener("click", () => {
+  if (confirm("Clear all groups and start over? Your edited card text will be kept.")) {
+    state = { ...fresh(), cards:state.cards }; save(); render();
+  }
+});
+document.getElementById("export").addEventListener("click", () => {
+  const rows = [["Group","#","Card","Description"]];
+  cards.forEach(({ id, title, description }, i) => {
+    const p = state.placement[id];
+    const g = p && state.groups.find(x => x.id === p.g);
+    rows.push([g ? (g.name || "(unnamed)") : "(unsorted)", i+1, title, description]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "card-sort-results.csv"; a.click();
+});
+
+render();
+new ResizeObserver(([entry]) => {
+  document.documentElement.style.setProperty("--header-height", `${entry.target.offsetHeight}px`);
+}).observe(document.querySelector("header"));
+</script>
+</body>
+</html>
